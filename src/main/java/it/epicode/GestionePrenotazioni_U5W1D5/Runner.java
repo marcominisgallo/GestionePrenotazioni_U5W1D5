@@ -2,6 +2,7 @@ package it.epicode.GestionePrenotazioni_U5W1D5;
 
 import it.epicode.GestionePrenotazioni_U5W1D5.repository.EdificioRepository;
 import it.epicode.GestionePrenotazioni_U5W1D5.repository.PostazioneRepository;
+import it.epicode.GestionePrenotazioni_U5W1D5.repository.PrenotazioneRepository;
 import it.epicode.GestionePrenotazioni_U5W1D5.repository.UtenteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -22,7 +23,7 @@ public class Runner implements CommandLineRunner {
     @Autowired
     private PostazioneRepository postazioneRepository;
     @Autowired
-    private PrenotazioneService prenotazioneService;
+    private PrenotazioneRepository prenotazioneRepository;
 
     @Override
     public void run(String... args) {
@@ -99,11 +100,17 @@ public class Runner implements CommandLineRunner {
         System.out.print("Data prenotazione (YYYY-MM-DD): ");
         LocalDate data = LocalDate.parse(scanner.nextLine());
         Prenotazione prenotazione = new Prenotazione(null, utenteSel.get(), postSel.get(), data);
-        boolean ok = prenotazioneService.prenota(prenotazione);
-        if (ok) {
-            System.out.println("Prenotazione effettuata");
-        } else {
+
+        boolean postazioneOccupata = prenotazioneRepository.existsByPostazioneIdAndData(
+                prenotazione.getPostazione().getId(), prenotazione.getData());
+        boolean utenteHaPrenotazione = prenotazioneRepository.existsByUtenteUsernameAndData(
+                prenotazione.getUtente().getUsername(), prenotazione.getData());
+
+        if (postazioneOccupata || utenteHaPrenotazione) {
             System.out.println("Postazione occupata o utente già prenotato per questa data");
+        } else {
+            prenotazioneRepository.save(prenotazione);
+            System.out.println("Prenotazione effettuata");
         }
     }
 }
